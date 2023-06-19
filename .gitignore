@@ -1,3 +1,7 @@
 1. Basics/x64/*
+1. Basics/Intel® VTune™ Profiler Results/*
 2. Whitted/x64/*
+2. Whitted/Intel® VTune™ Profiler Results/*
 .vs/*
+debug.log
+GPUCache/*
