@@ -417,9 +417,7 @@ namespace Tmpl8 {
             double k3 = dot( O, D );
             double k32 = k3 * k3;
             // bounding sphere test
-            //double v = k32 - m + 1.10249984;
-            //if ( v < 0 ) return;
-            if ( k32 - m < -1.10249984 ) return;
+            if ( k32 < m - 1.10249984 ) return;
 
             // setup torus intersection
             double k = ( m - 0.0625 - 0.640000045 ) * 0.5;
