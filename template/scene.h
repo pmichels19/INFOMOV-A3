@@ -504,8 +504,7 @@ namespace Tmpl8 {
             float k3 = dot( O, D );
             float k32 = k3 * k3;
             // bounding sphere test
-            float v = k32 - m + 1.10249984;
-            if ( v < 0.0 ) return false;
+            if ( k32 < m - 1.10249984 ) return false;
 
             // setup torus intersection
             float k = ( m - 0.0625 - 0.640000045 ) * 0.5f;
