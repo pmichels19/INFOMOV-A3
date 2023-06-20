@@ -349,7 +349,6 @@ namespace Tmpl8 {
             const float Oy = invT.cell[4] * ray.O.x + invT.cell[5] * ray.O.y + invT.cell[6] * ray.O.z + invT.cell[7];
             const float Dy = invT.cell[4] * ray.D.x + invT.cell[5] * ray.D.y + invT.cell[6] * ray.D.z;
             const float t = Oy / -Dy;
-            // TODO: Expensive branch miss?
             if ( t < ray.t && t > 0 ) {
                 const float Ox = invT.cell[0] * ray.O.x + invT.cell[1] * ray.O.y + invT.cell[2] * ray.O.z + invT.cell[3];
                 const float Oz = invT.cell[8] * ray.O.x + invT.cell[9] * ray.O.y + invT.cell[10] * ray.O.z + invT.cell[11];
@@ -368,7 +367,6 @@ namespace Tmpl8 {
             const float Oy = invT.cell[4] * ray.O.x + invT.cell[5] * ray.O.y + invT.cell[6] * ray.O.z + invT.cell[7];
             const float Dy = invT.cell[4] * ray.D.x + invT.cell[5] * ray.D.y + invT.cell[6] * ray.D.z;
             const float t = Oy / -Dy;
-            // TODO: Expensive branch miss?
             if ( t < ray.t && t > 0 ) {
                 const float Ox = invT.cell[0] * ray.O.x + invT.cell[1] * ray.O.y + invT.cell[2] * ray.O.z + invT.cell[3];
                 const float Oz = invT.cell[8] * ray.O.x + invT.cell[9] * ray.O.y + invT.cell[10] * ray.O.z + invT.cell[11];
@@ -624,17 +622,7 @@ namespace Tmpl8 {
             // default time for the scene is simply 0. Updating/ the time per frame 
             // enables animation. Updating it per ray can be used for motion blur.
             animTime = t;
-#ifdef FOURLIGHTS
-            // four light sources are stationary
-            quad[0].T = mat4::Translate( -1, 1.5f, -1 );
-            quad[0].invT = quad[0].T.FastInvertedTransformNoScale();
-            quad[1].T = mat4::Translate( 1, 1.5f, -1 );
-            quad[1].invT = quad[1].T.FastInvertedTransformNoScale();
-            quad[2].T = mat4::Translate( 1, 1.5f, 1 );
-            quad[2].invT = quad[2].T.FastInvertedTransformNoScale();
-            quad[3].T = mat4::Translate( -1, 1.5f, 1 );
-            quad[3].invT = quad[3].T.FastInvertedTransformNoScale();
-#else
+#ifndef FOURLIGHTS
             // light source animation: swing
             mat4 M1base = mat4::Translate( float3( 0, 2.6f, 2 ) );
             mat4 M1 = M1base * mat4::RotateZ( sinf( animTime * 0.6f ) * 0.1f ) * mat4::Translate( float3( 0, -0.9f, 0 ) );
@@ -740,28 +728,30 @@ namespace Tmpl8 {
             const float3 ro = ray.O;
             const float3 rd = ray.D;
             // TODO: the room is actually just an AABB; use slab test
-            static const __m128 x4min = _mm_setr_ps( 3, 1, 3, 1e30f );
-            static const __m128 x4max = _mm_setr_ps( -2.99f, -2, -3.99f, 1e30f );
-            static const __m128 idmin = _mm_castsi128_ps( _mm_setr_epi32( 4, 6, 8, -1 ) );
-            static const __m128 idmax = _mm_castsi128_ps( _mm_setr_epi32( 5, 7, 9, -1 ) );
-            static const __m128 zero4 = _mm_setzero_ps();
-            const __m128 selmask = _mm_cmpge_ps( ray.D4, zero4 );
-            const __m128i idx4 = _mm_castps_si128( _mm_blendv_ps( idmin, idmax, selmask ) );
-            const __m128 x4 = _mm_blendv_ps( x4min, x4max, selmask );
-            const __m128 d4 = _mm_sub_ps( zero4, _mm_mul_ps( _mm_add_ps( ray.O4, x4 ), ray.rD4 ) );
-            const __m128 mask4 = _mm_cmple_ps( d4, zero4 );
-            const __m128 t4 = _mm_blendv_ps( d4, _mm_set1_ps( 1e34f ), mask4 );
-            /* first: unconditional */
-            ray.t = t4.m128_f32[0];
-            ray.objIdx = idx4.m128i_i32[0];
-            if ( t4.m128_f32[1] < ray.t ) {
-                ray.t = t4.m128_f32[1];
-                ray.objIdx = idx4.m128i_i32[1];
-            }
+            {
+                static const __m128 x4min = _mm_setr_ps( 3, 1, 3, 1e30f );
+                static const __m128 x4max = _mm_setr_ps( -2.99f, -2, -3.99f, 1e30f );
+                static const __m128 idmin = _mm_castsi128_ps( _mm_setr_epi32( 4, 6, 8, -1 ) );
+                static const __m128 idmax = _mm_castsi128_ps( _mm_setr_epi32( 5, 7, 9, -1 ) );
+                static const __m128 zero4 = _mm_setzero_ps();
+                const __m128 selmask = _mm_cmpge_ps( ray.D4, zero4 );
+                const __m128i idx4 = _mm_castps_si128( _mm_blendv_ps( idmin, idmax, selmask ) );
+                const __m128 x4 = _mm_blendv_ps( x4min, x4max, selmask );
+                const __m128 d4 = _mm_sub_ps( zero4, _mm_mul_ps( _mm_add_ps( ray.O4, x4 ), ray.rD4 ) );
+                const __m128 mask4 = _mm_cmple_ps( d4, zero4 );
+                const __m128 t4 = _mm_blendv_ps( d4, _mm_set1_ps( 1e34f ), mask4 );
+                /* first: unconditional */
+                ray.t = t4.m128_f32[0];
+                ray.objIdx = idx4.m128i_i32[0];
+                if ( t4.m128_f32[1] < ray.t ) {
+                    ray.t = t4.m128_f32[1];
+                    ray.objIdx = idx4.m128i_i32[1];
+                }
 
-            if ( t4.m128_f32[2] < ray.t ) {
-                ray.t = t4.m128_f32[2];
-                ray.objIdx = idx4.m128i_i32[2];
+                if ( t4.m128_f32[2] < ray.t ) {
+                    ray.t = t4.m128_f32[2];
+                    ray.objIdx = idx4.m128i_i32[2];
+                }
             }
 #else
             if ( ray.D.x < 0 ) PLANE_X( 3, 4 ) else PLANE_X( -2.99f, 5 );
@@ -769,7 +759,20 @@ namespace Tmpl8 {
             if ( ray.D.z < 0 ) PLANE_Z( 3, 8 ) else PLANE_Z( -3.99f, 9 );
 #endif
 #ifdef FOURLIGHTS
-            for ( int i = 0; i < 4; i++ ) quad[i].Intersect( ray );
+            {
+                // Intersect all four quads in one go, extremely easy because they have fixed postitions
+                const __m128 tq4 = _mm_div_ps( _mm_add_ps( _mm_set_ps1( ray.O.y ), { -1.5f, -1.5f, -1.5f, -1.5f } ), _mm_xor_ps( _mm_set_ps1( ray.D.y ), _mm_set_ps1( -0.0f ) ) );
+                const __m128 Ix4 = _mm_add_ps( _mm_add_ps( _mm_set_ps1( ray.O.x ), { 1, -1, -1, 1 } ), _mm_mul_ps( tq4, _mm_set_ps1( ray.D.x ) ) );
+                const __m128 Iz4 = _mm_add_ps( _mm_add_ps( _mm_set_ps1( ray.O.z ), { 1, 1, -1, -1 } ), _mm_mul_ps( tq4, _mm_set_ps1( ray.D.z ) ) );
+                const __m128 hitmask = _mm_and_ps( _mm_and_ps( _mm_cmpgt_ps( Ix4, { -0.25f, -0.25f, -0.25f, -0.25f } ), _mm_cmplt_ps( Ix4, { 0.25f, 0.25f, 0.25f, 0.25f } ) ), _mm_and_ps( _mm_cmpgt_ps( Iz4, { -0.25f, -0.25f, -0.25f, -0.25f } ), _mm_cmplt_ps( Iz4, { 0.25f, 0.25f, 0.25f, 0.25f } ) ) );
+                const __m128 valmask = _mm_and_ps( _mm_cmplt_ps( tq4, _mm_set_ps1( ray.t ) ), _mm_cmpgt_ps( tq4, _mm_setzero_ps() ) );
+                const __m128 mask = _mm_and_ps( hitmask, valmask );
+                const __m128 ft4 = _mm_blendv_ps( _mm_set_ps1( 1e34f ), tq4, mask );
+                if ( ft4.m128_f32[0] < ray.t ) ray.t = ft4.m128_f32[0], ray.objIdx = 0;
+                if ( ft4.m128_f32[1] < ray.t ) ray.t = ft4.m128_f32[1], ray.objIdx = 0;
+                if ( ft4.m128_f32[2] < ray.t ) ray.t = ft4.m128_f32[2], ray.objIdx = 0;
+                if ( ft4.m128_f32[3] < ray.t ) ray.t = ft4.m128_f32[3], ray.objIdx = 0;
+            }
 #else
             quad.Intersect( ray );
 #endif
