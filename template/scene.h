@@ -417,14 +417,14 @@ namespace Tmpl8 {
             double k3 = dot( O, D );
             double k32 = k3 * k3;
             // bounding sphere test
-            double v = k32 - m + r2;
+            double v = k32 - m + 1.10249984;
             if ( v < 0 ) return;
 
             // setup torus intersection
-            double k = ( m - rt2 - rc2 ) * 0.5;
-            double k2 = k32 + rc2 * D.z * D.z + k;
-            double k1 = k * k3 + rc2 * O.z * D.z;
-            double k0 = k * k + rc2 * O.z * O.z - rc2 * rt2;
+            double k = ( m - 0.0625 - 0.640000045 ) * 0.5;
+            double k2 = k32 + 0.640000045 * D.z * D.z + k;
+            double k1 = k * k3 + 0.640000045 * O.z * D.z;
+            double k0 = k * k + 0.640000045 * O.z * O.z - 0.640000045 * 0.0625;
             // solve quadratic equation
             if ( fabs( k3 * ( k32 - k2 ) + k1 ) < 0.0001 ) {
                 swap( k1, k3 );
@@ -500,18 +500,19 @@ namespace Tmpl8 {
             // via: https://www.shadertoy.com/view/4sBGDy
             float3 O = TransformPosition_SSE( ray.O4, invT );
             float3 D = TransformVector_SSE( ray.D4, invT );
-            float po = 1, m = dot( O, O );
+            float po = 1;
+            float m = dot( O, O );
             float k3 = dot( O, D );
             float k32 = k3 * k3;
             // bounding sphere test
-            float v = k32 - m + r2;
+            float v = k32 - m + 1.10249984;
             if ( v < 0.0 ) return false;
 
             // setup torus intersection
-            float k = ( m - rt2 - rc2 ) * 0.5f;
-            float k2 = k32 + rc2 * D.z * D.z + k;
-            float k1 = k * k3 + rc2 * O.z * D.z;
-            float k0 = k * k + rc2 * O.z * O.z - rc2 * rt2;
+            float k = ( m - 0.0625 - 0.640000045 ) * 0.5f;
+            float k2 = k32 + 0.640000045 * D.z * D.z + k;
+            float k1 = k * k3 + 0.640000045 * O.z * D.z;
+            float k0 = k * k + 0.640000045 * O.z * O.z - 0.640000045 * 0.0625;
             // solve quadratic equation
             if ( fabs( k3 * ( k32 - k2 ) + k1 ) < 0.01f ) {
                 swap( k1, k3 );
@@ -529,6 +530,7 @@ namespace Tmpl8 {
             c2 *= 0.33333333333f;
             c1 *= 2;
             c0 *= 0.33333333333f;
+
             float Q = c2 * c2 + c0;
             float R = 3 * c0 * c2 - c2 * c2 * c2 - c1 * c1;
             float h = R * R - Q * Q * Q;
@@ -573,7 +575,7 @@ namespace Tmpl8 {
 
         float3 GetNormal( const float3 I ) const {
             float3 L = TransformPosition( I, invT );
-            float3 N = normalize( L * ( dot( L, L ) - rt2 - rc2 * float3( 1, 1, -1 ) ) );
+            float3 N = normalize( L * ( dot( L, L ) - 0.0625 - 0.640000045 * float3( 1, 1, -1 ) ) );
             return TransformVector( N, T );
         }
 
@@ -734,7 +736,7 @@ namespace Tmpl8 {
         void FindNearest( Ray& ray ) const {
             // room walls - ugly shortcut for more speed
 #ifdef SPEEDTRIX
-    // prefetching
+            // prefetching
             const float3 spos = sphere.pos;
             const float3 ro = ray.O;
             const float3 rd = ray.D;
@@ -751,9 +753,17 @@ namespace Tmpl8 {
             const __m128 mask4 = _mm_cmple_ps( d4, zero4 );
             const __m128 t4 = _mm_blendv_ps( d4, _mm_set1_ps( 1e34f ), mask4 );
             /* first: unconditional */
-            ray.t = t4.m128_f32[0], ray.objIdx = idx4.m128i_i32[0];
-            if ( t4.m128_f32[1] < ray.t ) ray.t = t4.m128_f32[1], ray.objIdx = idx4.m128i_i32[1];
-            if ( t4.m128_f32[2] < ray.t ) ray.t = t4.m128_f32[2], ray.objIdx = idx4.m128i_i32[2];
+            ray.t = t4.m128_f32[0];
+            ray.objIdx = idx4.m128i_i32[0];
+            if ( t4.m128_f32[1] < ray.t ) {
+                ray.t = t4.m128_f32[1];
+                ray.objIdx = idx4.m128i_i32[1];
+            }
+
+            if ( t4.m128_f32[2] < ray.t ) {
+                ray.t = t4.m128_f32[2];
+                ray.objIdx = idx4.m128i_i32[2];
+            }
 #else
             if ( ray.D.x < 0 ) PLANE_X( 3, 4 ) else PLANE_X( -2.99f, 5 );
             if ( ray.D.y < 0 ) PLANE_Y( 1, 6 ) else PLANE_Y( -2, 7 );
