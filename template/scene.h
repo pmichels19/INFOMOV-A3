@@ -271,7 +271,8 @@ namespace Tmpl8 {
             __m128 v7 = _mm_mul_ps( b4, _mm_load_ps( &invM.cell[12] ) );
             _MM_TRANSPOSE4_PS( v4, v5, v6, v7 );
             __m128 d4 = _mm_add_ps( _mm_add_ps( v4, v5 ), v6 );
-            __m128 rd4 = _mm_div_ps( _mm_set1_ps( 1.0f ), d4 ); // _mm_rcp_ps( d4 ); // reduced precision unsufficient?
+            //__m128 rd4 = _mm_div_ps( _mm_set1_ps( 1.0f ), d4 );
+            __m128 rd4 = _mm_rcp_ps( d4 ); // reduced precision unsufficient?
             // AABB test
             __m128 t1 = _mm_mul_ps( _mm_sub_ps( bmin4, o4 ), rd4 );
             __m128 t2 = _mm_mul_ps( _mm_sub_ps( bmax4, o4 ), rd4 );
