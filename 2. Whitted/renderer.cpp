@@ -131,10 +131,12 @@ void Renderer::Tick( float deltaTime )
 		// translate accumulator contents to rgb32 pixels
 		for (int dest = y * SCRWIDTH, x = 0; x < SCRWIDTH; x++)
 			screen->pixels[dest + x] =
-			RGBF32_to_RGB8( &accumulator[x + y * SCRWIDTH] );
+			RGBF32_to_RGB8( &accumulator[x + y * SCRWIDTH] );	
 	}
 	// performance report - running average - ms, MRays/s
 	avg = (1 - alpha) * avg + alpha * t.elapsed() * 1000;
+	float fps = 1000.0f / avg, rps = ( SCRWIDTH * SCRHEIGHT ) / avg;
+	printf( "%5.2fms (%.1ffps) - %.1fMrays/s\n", avg, fps, rps / 1000 );
 	if (alpha > 0.05f) alpha *= 0.75f;
 	// handle user input
 	camera.HandleInput( deltaTime );

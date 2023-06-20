@@ -760,11 +760,10 @@ namespace Tmpl8 {
 #endif
 #ifdef FOURLIGHTS
             {
-                // Intersect all four quads in one go, extremely easy because they have fixed postitions
-                const __m128 tq4 = _mm_div_ps( _mm_add_ps( _mm_set_ps1( ray.O.y ), { -1.5f, -1.5f, -1.5f, -1.5f } ), _mm_xor_ps( _mm_set_ps1( ray.D.y ), _mm_set_ps1( -0.0f ) ) );
-                const __m128 Ix4 = _mm_add_ps( _mm_add_ps( _mm_set_ps1( ray.O.x ), { 1, -1, -1, 1 } ), _mm_mul_ps( tq4, _mm_set_ps1( ray.D.x ) ) );
-                const __m128 Iz4 = _mm_add_ps( _mm_add_ps( _mm_set_ps1( ray.O.z ), { 1, 1, -1, -1 } ), _mm_mul_ps( tq4, _mm_set_ps1( ray.D.z ) ) );
-                const __m128 hitmask = _mm_and_ps( _mm_and_ps( _mm_cmpgt_ps( Ix4, { -0.25f, -0.25f, -0.25f, -0.25f } ), _mm_cmplt_ps( Ix4, { 0.25f, 0.25f, 0.25f, 0.25f } ) ), _mm_and_ps( _mm_cmpgt_ps( Iz4, { -0.25f, -0.25f, -0.25f, -0.25f } ), _mm_cmplt_ps( Iz4, { 0.25f, 0.25f, 0.25f, 0.25f } ) ) );
+                const __m128 tq4 = _mm_div_ps( _mm_add_ps( _mm_set1_ps( ray.O.y ), _mm_set1_ps( -1.5f ) ), _mm_xor_ps( _mm_set1_ps( ray.D.y ), _mm_set1_ps( -0.0f ) ) );
+                const __m128 Ix4 = _mm_add_ps( _mm_add_ps( _mm_set1_ps( ray.O.x ), { 1, -1, -1, 1 } ), _mm_mul_ps( tq4, _mm_set1_ps( ray.D.x ) ) );
+                const __m128 Iz4 = _mm_add_ps( _mm_add_ps( _mm_set1_ps( ray.O.z ), { 1, 1, -1, -1 } ), _mm_mul_ps( tq4, _mm_set1_ps( ray.D.z ) ) );
+                const __m128 hitmask = _mm_and_ps( _mm_and_ps( _mm_cmpgt_ps( Ix4, _mm_set1_ps( -0.25f ) ), _mm_cmplt_ps( Ix4, _mm_set1_ps( 0.25f ) ) ), _mm_and_ps( _mm_cmpgt_ps( Iz4, _mm_set1_ps( -0.25f ) ), _mm_cmplt_ps( Iz4, _mm_set1_ps( 0.25f ) ) ) );
                 const __m128 valmask = _mm_and_ps( _mm_cmplt_ps( tq4, _mm_set_ps1( ray.t ) ), _mm_cmpgt_ps( tq4, _mm_setzero_ps() ) );
                 const __m128 mask = _mm_and_ps( hitmask, valmask );
                 const __m128 ft4 = _mm_blendv_ps( _mm_set_ps1( 1e34f ), tq4, mask );
@@ -823,8 +822,14 @@ namespace Tmpl8 {
             if ( sphere.IsOccluded( ray ) ) return true;
 #endif
 #ifdef FOURLIGHTS
-            for ( int i = 0; i < 4; i++ ) {
-                if ( quad[i].IsOccluded( ray ) ) return true;
+            {
+                const __m128 tq4 = _mm_div_ps( _mm_add_ps( _mm_set1_ps( ray.O.y ), _mm_set1_ps( -1.5f ) ), _mm_xor_ps( _mm_set1_ps( ray.D.y ), _mm_set1_ps( -0.0f ) ) );
+                const __m128 Ix4 = _mm_add_ps( _mm_add_ps( _mm_set1_ps( ray.O.x ), { 1, -1, -1, 1 } ), _mm_mul_ps( tq4, _mm_set1_ps( ray.D.x ) ) );
+                const __m128 Iz4 = _mm_add_ps( _mm_add_ps( _mm_set1_ps( ray.O.z ), { 1, 1, -1, -1 } ), _mm_mul_ps( tq4, _mm_set1_ps( ray.D.z ) ) );
+                const __m128 hitmask = _mm_and_ps( _mm_and_ps( _mm_cmpgt_ps( Ix4, _mm_set1_ps( -0.25f ) ), _mm_cmplt_ps( Ix4, _mm_set1_ps( 0.25f ) ) ), _mm_and_ps( _mm_cmpgt_ps( Iz4, _mm_set1_ps( -0.25f ) ), _mm_cmplt_ps( Iz4, _mm_set1_ps( 0.25f ) ) ) );
+                const __m128 valmask = _mm_and_ps( _mm_cmplt_ps( tq4, _mm_set_ps1( ray.t ) ), _mm_cmpgt_ps( tq4, _mm_setzero_ps() ) );
+                int hit = _mm_movemask_ps( _mm_and_ps( hitmask, valmask ) );
+                if ( hit != 0 ) return true;
             }
 #else
             if ( quad.IsOccluded( ray ) ) return true;
