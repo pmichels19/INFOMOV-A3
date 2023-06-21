@@ -732,32 +732,10 @@ namespace Tmpl8 {
             const float3 spos = sphere.pos;
             const float3 ro = ray.O;
             const float3 rd = ray.D;
-            // TODO: the room is actually just an AABB; use slab test
-            {
-                static const __m128 x4min = _mm_setr_ps( 3, 1, 3, 1e30f );
-                static const __m128 x4max = _mm_setr_ps( -2.99f, -2, -3.99f, 1e30f );
-                static const __m128 idmin = _mm_castsi128_ps( _mm_setr_epi32( 4, 6, 8, -1 ) );
-                static const __m128 idmax = _mm_castsi128_ps( _mm_setr_epi32( 5, 7, 9, -1 ) );
-                static const __m128 zero4 = _mm_setzero_ps();
-                const __m128 selmask = _mm_cmpge_ps( ray.D4, zero4 );
-                const __m128i idx4 = _mm_castps_si128( _mm_blendv_ps( idmin, idmax, selmask ) );
-                const __m128 x4 = _mm_blendv_ps( x4min, x4max, selmask );
-                const __m128 d4 = _mm_sub_ps( zero4, _mm_mul_ps( _mm_add_ps( ray.O4, x4 ), ray.rD4 ) );
-                const __m128 mask4 = _mm_cmple_ps( d4, zero4 );
-                const __m128 t4 = _mm_blendv_ps( d4, _mm_set1_ps( 1e34f ), mask4 );
-                /* first: unconditional */
-                ray.t = t4.m128_f32[0];
-                ray.objIdx = idx4.m128i_i32[0];
-                if ( t4.m128_f32[1] < ray.t ) {
-                    ray.t = t4.m128_f32[1];
-                    ray.objIdx = idx4.m128i_i32[1];
-                }
-
-                if ( t4.m128_f32[2] < ray.t ) {
-                    ray.t = t4.m128_f32[2];
-                    ray.objIdx = idx4.m128i_i32[2];
-                }
-            }
+            float t;
+            if ( ray.D.x < 0 ) PLANE_X( 3, 4 ) else PLANE_X( -2.99f, 5 );
+            if ( ray.D.y < 0 ) PLANE_Y( 1, 6 ) else PLANE_Y( -2, 7 );
+            if ( ray.D.z < 0 ) PLANE_Z( 3, 8 ) else PLANE_Z( -3.99f, 9 );
 #else
             if ( ray.D.x < 0 ) PLANE_X( 3, 4 ) else PLANE_X( -2.99f, 5 );
             if ( ray.D.y < 0 ) PLANE_Y( 1, 6 ) else PLANE_Y( -2, 7 );
