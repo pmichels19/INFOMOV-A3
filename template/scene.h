@@ -409,8 +409,10 @@ namespace Tmpl8 {
 
         void Intersect( Ray& ray ) const {
             // via: https://www.shadertoy.com/view/4sBGDy
-            float3 O = TransformPosition_SSE( ray.O4, invT );
-            float3 D = TransformVector_SSE( ray.D4, invT );
+            float3 O = make_float3( ray.O.x + 0.25f, 0.707106829f * ray.O.y + 0.707106829f * ray.O.z - 1.41421366f, -0.707106829f * ray.O.y + 0.707106829f * ray.O.z - 1.41421366f );
+            //float3 O = invT.TransformPoint( ray.O );
+            float3 D = make_float3( ray.D.x, 0.707106829f * ray.D.y + 0.707106829f * ray.D.z, -0.707106829f * ray.D.y + 0.707106829f * ray.D.z );
+            //float3 D = invT.TransformVector( ray.D );
             // extension rays need double precision for the quadratic solver!
             double po = 1;
             double m = dot( O, O );
@@ -497,8 +499,10 @@ namespace Tmpl8 {
 
         bool IsOccluded( const Ray& ray ) const {
             // via: https://www.shadertoy.com/view/4sBGDy
-            float3 O = TransformPosition_SSE( ray.O4, invT );
-            float3 D = TransformVector_SSE( ray.D4, invT );
+            float3 O = make_float3( ray.O.x + 0.25f, 0.707106829f * ray.O.y + 0.707106829f * ray.O.z - 1.41421366f, -0.707106829f * ray.O.y + 0.707106829f * ray.O.z - 1.41421366f );
+            //float3 O = invT.TransformPoint( ray.O );
+            float3 D = make_float3( ray.D.x, 0.707106829f * ray.D.y + 0.707106829f * ray.D.z, -0.707106829f * ray.D.y + 0.707106829f * ray.D.z );
+            //float3 D = invT.TransformVector( ray.D );
             float po = 1;
             float m = dot( O, O );
             float k3 = dot( O, D );
